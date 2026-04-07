@@ -315,6 +315,9 @@ const styles = {
     background: '#fff',
   },
   table: { borderCollapse: 'collapse', width: '100%', minWidth: 1150 },
+  stickyCol1: { position: 'sticky', left: 0, background: '#fff', zIndex: 2 },
+  stickyCol2: { position: 'sticky', left: 60, background: '#fff', zIndex: 2 },
+  stickyCol3: { position: 'sticky', left: 120, background: '#fff', zIndex: 2 },
   th: {
     padding: 8,
     borderBottom: '1px solid #e6d8dd',
@@ -351,6 +354,7 @@ const styles = {
 export default function App() {
   const [scores, setScores] = useState(createInitialScores);
   const [activeTab, setActiveTab] = useState(matches[0].id);
+  const [showSideBet, setShowSideBet] = useState(false);
   const [sessionId, setSessionId] = useState("shangri-la-2026");
   const [sessionInput, setSessionInput] = useState("shangri-la-2026");
   const [syncStatus, setSyncStatus] = useState(hasSupabaseConfig ? "Connecting..." : "Local only");
@@ -561,11 +565,52 @@ export default function App() {
           </div>
         </div>
 
+        {showSideBet && (
         <div style={styles.card}>
           <h2 style={{ marginTop: 0 }}>{SIDE_BET.name}</h2>
           <div style={{ ...styles.row, marginBottom: 16 }}>
             <div style={styles.scoreBox}>
               <div style={{ fontWeight: 700 }}>{SIDE_BET.teamAName}</div>
+              <div>Total best-ball score: <strong>{sideBet.teamATotal}</strong></div>
+              <div>Holes won: <strong>{sideBet.teamAHolesWon}</strong></div>
+            </div>
+            <div style={styles.scoreBox}>
+              <div style={{ fontWeight: 700 }}>{SIDE_BET.teamBName}</div>
+              <div>Total best-ball score: <strong>{sideBet.teamBTotal}</strong></div>
+              <div>Holes won: <strong>{sideBet.teamBHolesWon}</strong></div>
+            </div>
+            <div style={styles.scoreBox}>
+              <div style={{ fontWeight: 700 }}>Tied holes</div>
+              <div style={{ fontSize: 22, marginTop: 6 }}><strong>{sideBet.ties}</strong></div>
+            </div>
+          </div>
+
+          <div style={styles.tableWrap}>
+            <table style={{ ...styles.table, minWidth: 800 }}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Match</th>
+                  <th style={{ ...styles.th, ...styles.stickyCol1 }}>Hole</th>
+                  <th style={styles.th}>{SIDE_BET.teamAName}</th>
+                  <th style={styles.th}>{SIDE_BET.teamBName}</th>
+                  <th style={styles.th}>Winner</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sideBet.holes.map((item) => (
+                  <tr key={item.key}>
+                    <td style={styles.td}>{item.matchTitle}</td>
+                    <td style={styles.td}>{item.holeLabel}</td>
+                    <td style={styles.td}>{item.teamAScore ?? "-"}</td>
+                    <td style={styles.td}>{item.teamBScore ?? "-"}</td>
+                    <td style={styles.td}>{item.winner || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
               <div>Total best-ball score: <strong>{sideBet.teamATotal}</strong></div>
               <div>Holes won: <strong>{sideBet.teamAHolesWon}</strong></div>
             </div>
@@ -610,12 +655,21 @@ export default function App() {
           {matches.map((match) => (
             <button
               key={match.id}
-              style={styles.tab(activeTab === match.id)}
-              onClick={() => setActiveTab(match.id)}
+              style={styles.tab(activeTab === match.id && !showSideBet)}
+              onClick={() => {
+                setActiveTab(match.id);
+                setShowSideBet(false);
+              }}
             >
               {match.title}
             </button>
           ))}
+          <button
+            style={styles.tab(showSideBet)}
+            onClick={() => setShowSideBet(true)}
+          >
+            Side Bet
+          </button>
         </div>
 
         <div style={styles.card}>
@@ -644,8 +698,8 @@ export default function App() {
               <thead>
                 <tr>
                   <th style={styles.th}>Hole</th>
-                  <th style={styles.th}>Par</th>
-                  <th style={styles.th}>Course</th>
+                  <th style={{ ...styles.th, ...styles.stickyCol2 }}>Par</th>
+                  <th style={{ ...styles.th, ...styles.stickyCol3 }}>Course</th>
                   {activeMatch.players.map((player) => (
                     <th key={player} style={styles.th}>{player}</th>
                   ))}
@@ -663,9 +717,9 @@ export default function App() {
 
                   return (
                     <tr key={`${activeMatch.id}-${holeIndex}`}>
-                      <td style={styles.td}>{hole.hole}</td>
-                      <td style={styles.td}>{hole.par}</td>
-                      <td style={styles.td}>{hole.course}</td>
+                      <td style={{ ...styles.td, ...styles.stickyCol1 }}>{hole.hole}</td>
+                      <td style={{ ...styles.td, ...styles.stickyCol2 }}>{hole.par}</td>
+                      <td style={{ ...styles.td, ...styles.stickyCol3 }}>{hole.course}</td>
                       {activeMatch.players.map((player) => (
                         <td key={`${holeIndex}-${player}`} style={styles.td}>
                           <input
