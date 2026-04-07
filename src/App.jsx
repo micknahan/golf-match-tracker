@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const STORAGE_KEY = "shangri-la-matches-app-v3";
+const STORAGE_KEY = "shangri-la-matches-app-v4";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -23,8 +23,7 @@ const matches = [
   {
     id: "match1",
     title: "Day 1 Match",
-    subtitle:
-      "Heritage / Legends • 18 holes • 4-man teams • Best 2 scores count per hole",
+    subtitle: "Heritage / Legends • 18 holes • 4-man teams • Best 2 scores count per hole",
     scoreType: "best2of4",
     players: ["Jeff", "Cauley", "Dexter", "Cliff", "Cody", "Toal", "Mahan", "Wesley"],
     teams: [
@@ -55,8 +54,7 @@ const matches = [
   {
     id: "match2",
     title: "Day 2 Par 3 Match",
-    subtitle:
-      "Battlefield • 18 holes • 2-man teams • Best 1 score counts per hole",
+    subtitle: "Battlefield • 18 holes • 2-man teams • Best 1 score counts per hole",
     scoreType: "best1of2",
     players: ["Jeff", "Wesley", "Toal", "Cliff", "Mahan", "Cauley", "Cody", "Dexter"],
     teams: [
@@ -65,17 +63,12 @@ const matches = [
       { name: "Mahan / Cauley", players: ["Mahan", "Cauley"] },
       { name: "Cody / Dexter", players: ["Cody", "Dexter"] },
     ],
-    holes: Array.from({ length: 18 }, (_, i) => ({
-      hole: i + 1,
-      par: 3,
-      course: "Battlefield",
-    })),
+    holes: Array.from({ length: 18 }, (_, i) => ({ hole: i + 1, par: 3, course: "Battlefield" })),
   },
   {
     id: "match3",
     title: "Day 2 Afternoon Match",
-    subtitle:
-      "Champions • 9 holes • 4-man teams • Best 2 scores count per hole",
+    subtitle: "Champions • 9 holes • 4-man teams • Best 2 scores count per hole",
     scoreType: "best2of4",
     players: ["Cody", "Cliff", "Mahan", "Dexter", "Jeff", "Toal", "Cauley", "Wesley"],
     teams: [
@@ -131,7 +124,6 @@ function scoreNamedPlayersBestOne(players, holeScores) {
     .map((player) => toNumber(holeScores[player]))
     .filter((value) => value !== null)
     .sort((a, b) => a - b);
-
   return values.length >= 1 ? values[0] : null;
 }
 
@@ -160,7 +152,6 @@ function computeMatchSummary(match, scorebook) {
   const playerTotals = match.players.map((player) => {
     let total = 0;
     let entered = 0;
-
     match.holes.forEach((_, index) => {
       const value = toNumber(scorebook[index]?.[player]);
       if (value !== null) {
@@ -168,7 +159,6 @@ function computeMatchSummary(match, scorebook) {
         entered += 1;
       }
     });
-
     return { player, total, entered };
   });
 
@@ -212,7 +202,6 @@ function computeSideBet(scores) {
 
       holes.push({
         key: `${match.id}-${holeIndex}`,
-        matchId: match.id,
         matchTitle: match.title,
         holeLabel: `${hole.course} ${hole.hole}`,
         teamAScore,
@@ -222,14 +211,7 @@ function computeSideBet(scores) {
     });
   });
 
-  return {
-    holes,
-    teamATotal,
-    teamBTotal,
-    teamAHolesWon,
-    teamBHolesWon,
-    ties,
-  };
+  return { holes, teamATotal, teamBTotal, teamAHolesWon, teamBHolesWon, ties };
 }
 
 function deepMergeScores(base, incoming) {
@@ -259,94 +241,94 @@ function formatToPar(value) {
 
 const styles = {
   page: {
-    fontFamily: 'Arial, sans-serif',
-    background: 'linear-gradient(180deg, #f8fff7 0%, #fff4f7 100%)',
-    minHeight: '100vh',
+    fontFamily: "Arial, sans-serif",
+    background: "linear-gradient(180deg, #f8fff7 0%, #fff4f7 100%)",
+    minHeight: "100vh",
     padding: 16,
-    color: '#16351f',
+    color: "#16351f",
   },
-  wrap: { maxWidth: 1500, margin: '0 auto' },
+  wrap: { maxWidth: 1500, margin: "0 auto" },
   card: {
-    background: '#ffffff',
-    border: '1px solid #d9ead7',
+    background: "#ffffff",
+    border: "1px solid #d9ead7",
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
-    boxShadow: '0 8px 24px rgba(22, 53, 31, 0.06)',
+    boxShadow: "0 8px 24px rgba(22, 53, 31, 0.06)",
   },
-  row: { display: 'flex', gap: 12, flexWrap: 'wrap' },
+  row: { display: "flex", gap: 12, flexWrap: "wrap" },
   button: {
-    padding: '10px 14px',
+    padding: "10px 14px",
     borderRadius: 10,
-    border: '1px solid #2f6b3d',
-    background: '#2f6b3d',
-    color: '#fff',
-    cursor: 'pointer',
+    border: "1px solid #2f6b3d",
+    background: "#2f6b3d",
+    color: "#fff",
+    cursor: "pointer",
     fontWeight: 700,
   },
   buttonAlt: {
-    padding: '10px 14px',
+    padding: "10px 14px",
     borderRadius: 10,
-    border: '1px solid #e9b7c7',
-    background: '#fff5f8',
-    color: '#8d3453',
-    cursor: 'pointer',
+    border: "1px solid #e9b7c7",
+    background: "#fff5f8",
+    color: "#8d3453",
+    cursor: "pointer",
     fontWeight: 700,
   },
   input: {
-    padding: '10px 12px',
+    padding: "10px 12px",
     borderRadius: 10,
-    border: '1px solid #d8c4cb',
+    border: "1px solid #d8c4cb",
     minWidth: 220,
-    background: '#fffdfd',
+    background: "#fffdfd",
   },
   smallInput: {
     width: 54,
     padding: 6,
-    textAlign: 'center',
+    textAlign: "center",
     borderRadius: 8,
-    border: '1px solid #d8c4cb',
-    background: '#fffdfd',
+    border: "1px solid #d8c4cb",
+    background: "#fffdfd",
   },
   tableWrap: {
-    overflowX: 'auto',
-    border: '1px solid #e6d8dd',
+    overflowX: "auto",
+    border: "1px solid #e6d8dd",
     borderRadius: 16,
-    background: '#fff',
+    background: "#fff",
   },
-  table: { borderCollapse: 'collapse', width: '100%', minWidth: 1150 },
-  stickyCol1: { position: 'sticky', left: 0, background: '#fff', zIndex: 2 },
-  stickyCol2: { position: 'sticky', left: 60, background: '#fff', zIndex: 2 },
-  stickyCol3: { position: 'sticky', left: 120, background: '#fff', zIndex: 2 },
+  table: { borderCollapse: "collapse", width: "100%", minWidth: 1150 },
+  stickyCol1: { position: "sticky", left: 0, background: "#fff", zIndex: 2 },
+  stickyCol2: { position: "sticky", left: 60, background: "#fff", zIndex: 2 },
+  stickyCol3: { position: "sticky", left: 120, background: "#fff", zIndex: 2 },
   th: {
     padding: 8,
-    borderBottom: '1px solid #e6d8dd',
-    background: '#f7e7ed',
-    textAlign: 'center',
-    whiteSpace: 'nowrap',
+    borderBottom: "1px solid #e6d8dd",
+    background: "#f7e7ed",
+    textAlign: "center",
+    whiteSpace: "nowrap",
     fontSize: 13,
-    color: '#7b2d4b',
+    color: "#7b2d4b",
   },
   td: {
     padding: 8,
-    borderBottom: '1px solid #eef2ea',
-    textAlign: 'center',
+    borderBottom: "1px solid #eef2ea",
+    textAlign: "center",
     fontSize: 13,
   },
   tab: (active) => ({
-    padding: '10px 14px',
+    padding: "10px 14px",
     borderRadius: 12,
-    border: active ? '1px solid #2f6b3d' : '1px solid #e3c5cf',
-    background: active ? '#2f6b3d' : '#fff7fa',
-    color: active ? '#fff' : '#8d3453',
-    cursor: 'pointer',
+    border: active ? "1px solid #2f6b3d" : "1px solid #e3c5cf",
+    background: active ? "#2f6b3d" : "#fff7fa",
+    color: active ? "#fff" : "#8d3453",
+    cursor: "pointer",
     fontWeight: 700,
   }),
   scoreBox: {
-    border: '1px solid #e6d8dd',
+    border: "1px solid #e6d8dd",
     borderRadius: 12,
     padding: 12,
-    background: 'linear-gradient(180deg, #f8fff7 0%, #fff7fa 100%)',
+    background: "linear-gradient(180deg, #f8fff7 0%, #fff7fa 100%)",
     minWidth: 220,
   },
 };
@@ -374,7 +356,9 @@ export default function App() {
           setSessionId(parsed.sessionId);
           setSessionInput(parsed.sessionId);
         }
-      } catch {}
+      } catch {
+        // ignore bad cache
+      }
     }
 
     if (sessionFromUrl) {
@@ -387,10 +371,7 @@ export default function App() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ sessionId, scores, lastSavedAt: Date.now() }),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessionId, scores, lastSavedAt: Date.now() }));
   }, [scores, sessionId, isHydrated]);
 
   useEffect(() => {
@@ -424,7 +405,7 @@ export default function App() {
             scores: createInitialScores(),
             updated_at: new Date().toISOString(),
           },
-          { onConflict: "session_id" },
+          { onConflict: "session_id" }
         );
       }
 
@@ -442,7 +423,7 @@ export default function App() {
               setLastSavedAt(payload.new.updated_at || null);
               setSyncStatus("Live sync connected");
             }
-          },
+          }
         )
         .subscribe();
     }
@@ -537,15 +518,17 @@ export default function App() {
   const activeMatch = matches.find((m) => m.id === activeTab);
   const activeSummary = summaries[activeTab];
   const sortedTeams = [...activeSummary.teamTotals].sort(
-    (a, b) => a.total - b.total || b.completedHoles - a.completedHoles,
+    (a, b) => a.total - b.total || b.completedHoles - a.completedHoles
   );
 
   return (
     <div style={styles.page}>
       <div style={styles.wrap}>
         <div style={styles.card}>
-          <h1 style={{ marginTop: 0, color: '#1f5c32' }}>Shangri-La Match Tracker</h1>
-          <p style={{ color: '#7b2d4b' }}>Masters weekend edition — enter scores hole-by-hole and share the same session link with the group.</p>
+          <h1 style={{ marginTop: 0, color: "#1f5c32" }}>Shangri-La Match Tracker</h1>
+          <p style={{ color: "#7b2d4b" }}>
+            Masters weekend edition — enter scores hole-by-hole and share the same session link with the group.
+          </p>
           <div style={styles.row}>
             <input
               style={styles.input}
@@ -565,92 +548,6 @@ export default function App() {
           </div>
         </div>
 
-        {showSideBet && (
-        <div style={styles.card}>
-          <h2 style={{ marginTop: 0 }}>{SIDE_BET.name}</h2>
-          <div style={{ ...styles.row, marginBottom: 16 }}>
-            <div style={styles.scoreBox}>
-              <div style={{ fontWeight: 700 }}>{SIDE_BET.teamAName}</div>
-              <div>Total best-ball score: <strong>{sideBet.teamATotal}</strong></div>
-              <div>Holes won: <strong>{sideBet.teamAHolesWon}</strong></div>
-            </div>
-            <div style={styles.scoreBox}>
-              <div style={{ fontWeight: 700 }}>{SIDE_BET.teamBName}</div>
-              <div>Total best-ball score: <strong>{sideBet.teamBTotal}</strong></div>
-              <div>Holes won: <strong>{sideBet.teamBHolesWon}</strong></div>
-            </div>
-            <div style={styles.scoreBox}>
-              <div style={{ fontWeight: 700 }}>Tied holes</div>
-              <div style={{ fontSize: 22, marginTop: 6 }}><strong>{sideBet.ties}</strong></div>
-            </div>
-          </div>
-
-          <div style={styles.tableWrap}>
-            <table style={{ ...styles.table, minWidth: 800 }}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Match</th>
-                  <th style={{ ...styles.th, ...styles.stickyCol1 }}>Hole</th>
-                  <th style={styles.th}>{SIDE_BET.teamAName}</th>
-                  <th style={styles.th}>{SIDE_BET.teamBName}</th>
-                  <th style={styles.th}>Winner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sideBet.holes.map((item) => (
-                  <tr key={item.key}>
-                    <td style={styles.td}>{item.matchTitle}</td>
-                    <td style={styles.td}>{item.holeLabel}</td>
-                    <td style={styles.td}>{item.teamAScore ?? "-"}</td>
-                    <td style={styles.td}>{item.teamBScore ?? "-"}</td>
-                    <td style={styles.td}>{item.winner || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-              <div>Total best-ball score: <strong>{sideBet.teamATotal}</strong></div>
-              <div>Holes won: <strong>{sideBet.teamAHolesWon}</strong></div>
-            </div>
-            <div style={styles.scoreBox}>
-              <div style={{ fontWeight: 700 }}>{SIDE_BET.teamBName}</div>
-              <div>Total best-ball score: <strong>{sideBet.teamBTotal}</strong></div>
-              <div>Holes won: <strong>{sideBet.teamBHolesWon}</strong></div>
-            </div>
-            <div style={styles.scoreBox}>
-              <div style={{ fontWeight: 700 }}>Tied holes</div>
-              <div style={{ fontSize: 22, marginTop: 6 }}><strong>{sideBet.ties}</strong></div>
-            </div>
-          </div>
-
-          <div style={styles.tableWrap}>
-            <table style={{ ...styles.table, minWidth: 800 }}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Match</th>
-                  <th style={styles.th}>Hole</th>
-                  <th style={styles.th}>{SIDE_BET.teamAName}</th>
-                  <th style={styles.th}>{SIDE_BET.teamBName}</th>
-                  <th style={styles.th}>Winner</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sideBet.holes.map((item) => (
-                  <tr key={item.key}>
-                    <td style={styles.td}>{item.matchTitle}</td>
-                    <td style={styles.td}>{item.holeLabel}</td>
-                    <td style={styles.td}>{item.teamAScore ?? "-"}</td>
-                    <td style={styles.td}>{item.teamBScore ?? "-"}</td>
-                    <td style={styles.td}>{item.winner || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
         <div style={{ ...styles.row, marginBottom: 16 }}>
           {matches.map((match) => (
             <button
@@ -664,105 +561,143 @@ export default function App() {
               {match.title}
             </button>
           ))}
-          <button
-            style={styles.tab(showSideBet)}
-            onClick={() => setShowSideBet(true)}
-          >
+          <button style={styles.tab(showSideBet)} onClick={() => setShowSideBet(true)}>
             Side Bet
           </button>
         </div>
 
-        <div style={styles.card}>
-          <h2 style={{ marginTop: 0 }}>{activeMatch.title}</h2>
-          <div style={{ marginBottom: 12 }}>{activeMatch.subtitle}</div>
-          <div style={{ ...styles.row, marginBottom: 16 }}>
-            {sortedTeams.map((team) => (
-              <div key={team.name} style={styles.scoreBox}>
-                <div style={{ fontWeight: 700 }}>{team.name}</div>
-                <div>{team.players.join(" • ")}</div>
-                <div style={{ marginTop: 6 }}>Total: <strong>{team.total}</strong></div>
-                <div>To par: <strong>{formatToPar(team.toPar)}</strong></div>
-                <div>Completed holes: {team.completedHoles}/{activeMatch.holes.length}</div>
+        {showSideBet ? (
+          <div style={styles.card}>
+            <h2 style={{ marginTop: 0 }}>{SIDE_BET.name}</h2>
+            <div style={{ ...styles.row, marginBottom: 16 }}>
+              <div style={styles.scoreBox}>
+                <div style={{ fontWeight: 700 }}>{SIDE_BET.teamAName}</div>
+                <div>Total best-ball score: <strong>{sideBet.teamATotal}</strong></div>
+                <div>Holes won: <strong>{sideBet.teamAHolesWon}</strong></div>
               </div>
-            ))}
-          </div>
+              <div style={styles.scoreBox}>
+                <div style={{ fontWeight: 700 }}>{SIDE_BET.teamBName}</div>
+                <div>Total best-ball score: <strong>{sideBet.teamBTotal}</strong></div>
+                <div>Holes won: <strong>{sideBet.teamBHolesWon}</strong></div>
+              </div>
+              <div style={styles.scoreBox}>
+                <div style={{ fontWeight: 700 }}>Tied holes</div>
+                <div style={{ fontSize: 22, marginTop: 6 }}><strong>{sideBet.ties}</strong></div>
+              </div>
+            </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <button style={styles.buttonAlt} onClick={() => resetMatch(activeMatch.id)}>
-              Reset this match
-            </button>
-          </div>
-
-          <div style={styles.tableWrap}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Hole</th>
-                  <th style={{ ...styles.th, ...styles.stickyCol2 }}>Par</th>
-                  <th style={{ ...styles.th, ...styles.stickyCol3 }}>Course</th>
-                  {activeMatch.players.map((player) => (
-                    <th key={player} style={styles.th}>{player}</th>
-                  ))}
-                  {activeMatch.teams.map((team) => (
-                    <th key={team.name} style={styles.th}>{team.name}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {activeMatch.holes.map((hole, holeIndex) => {
-                  const holeScores = scores[activeMatch.id]?.[holeIndex] || {};
-                  const teamScores = activeMatch.teams.map((team) =>
-                    scoreTeamForHole(activeMatch, team, holeScores),
-                  );
-
-                  return (
-                    <tr key={`${activeMatch.id}-${holeIndex}`}>
-                      <td style={{ ...styles.td, ...styles.stickyCol1 }}>{hole.hole}</td>
-                      <td style={{ ...styles.td, ...styles.stickyCol2 }}>{hole.par}</td>
-                      <td style={{ ...styles.td, ...styles.stickyCol3 }}>{hole.course}</td>
-                      {activeMatch.players.map((player) => (
-                        <td key={`${holeIndex}-${player}`} style={styles.td}>
-                          <input
-                            style={styles.smallInput}
-                            inputMode="numeric"
-                            value={holeScores[player] ?? ""}
-                            onChange={(e) =>
-                              updateScore(activeMatch.id, holeIndex, player, e.target.value)
-                            }
-                          />
-                        </td>
-                      ))}
-                      {activeMatch.teams.map((team, i) => (
-                        <td key={`${holeIndex}-${team.name}`} style={styles.td}>
-                          {teamScores[i] ?? "-"}
-                        </td>
-                      ))}
+            <div style={styles.tableWrap}>
+              <table style={{ ...styles.table, minWidth: 800 }}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Match</th>
+                    <th style={styles.th}>Hole</th>
+                    <th style={styles.th}>{SIDE_BET.teamAName}</th>
+                    <th style={styles.th}>{SIDE_BET.teamBName}</th>
+                    <th style={styles.th}>Winner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sideBet.holes.map((item) => (
+                    <tr key={item.key}>
+                      <td style={styles.td}>{item.matchTitle}</td>
+                      <td style={styles.td}>{item.holeLabel}</td>
+                      <td style={styles.td}>{item.teamAScore ?? "-"}</td>
+                      <td style={styles.td}>{item.teamBScore ?? "-"}</td>
+                      <td style={styles.td}>{item.winner || "-"}</td>
                     </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td style={{ ...styles.td, fontWeight: 700 }}>Totals</td>
-                  <td style={{ ...styles.td, fontWeight: 700 }}>
-                    {activeMatch.holes.reduce((sum, hole) => sum + hole.par, 0)}
-                  </td>
-                  <td style={{ ...styles.td, fontWeight: 700 }}>-</td>
-                  {activeSummary.playerTotals.map((item) => (
-                    <td key={item.player} style={{ ...styles.td, fontWeight: 700 }}>
-                      {item.entered ? item.total : "-"}
-                    </td>
                   ))}
-                  {activeSummary.teamTotals.map((team) => (
-                    <td key={team.name} style={{ ...styles.td, fontWeight: 700 }}>
-                      {team.completedHoles ? team.total : "-"}
-                    </td>
-                  ))}
-                </tr>
-              </tfoot>
-            </table>
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={styles.card}>
+            <h2 style={{ marginTop: 0 }}>{activeMatch.title}</h2>
+            <div style={{ marginBottom: 12 }}>{activeMatch.subtitle}</div>
+            <div style={{ ...styles.row, marginBottom: 16 }}>
+              {sortedTeams.map((team) => (
+                <div key={team.name} style={styles.scoreBox}>
+                  <div style={{ fontWeight: 700 }}>{team.name}</div>
+                  <div>{team.players.join(" • ")}</div>
+                  <div style={{ marginTop: 6 }}>Total: <strong>{team.total}</strong></div>
+                  <div>To par: <strong>{formatToPar(team.toPar)}</strong></div>
+                  <div>Completed holes: {team.completedHoles}/{activeMatch.holes.length}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <button style={styles.buttonAlt} onClick={() => resetMatch(activeMatch.id)}>
+                Reset this match
+              </button>
+            </div>
+
+            <div style={styles.tableWrap}>
+              <table style={styles.table}>
+                <thead>
+                  <tr>
+                    <th style={{ ...styles.th, ...styles.stickyCol1 }}>Hole</th>
+                    <th style={{ ...styles.th, ...styles.stickyCol2 }}>Par</th>
+                    <th style={{ ...styles.th, ...styles.stickyCol3 }}>Course</th>
+                    {activeMatch.players.map((player) => (
+                      <th key={player} style={styles.th}>{player}</th>
+                    ))}
+                    {activeMatch.teams.map((team) => (
+                      <th key={team.name} style={styles.th}>{team.name}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeMatch.holes.map((hole, holeIndex) => {
+                    const holeScores = scores[activeMatch.id]?.[holeIndex] || {};
+                    const teamScores = activeMatch.teams.map((team) => scoreTeamForHole(activeMatch, team, holeScores));
+
+                    return (
+                      <tr key={`${activeMatch.id}-${holeIndex}`}>
+                        <td style={{ ...styles.td, ...styles.stickyCol1 }}>{hole.hole}</td>
+                        <td style={{ ...styles.td, ...styles.stickyCol2 }}>{hole.par}</td>
+                        <td style={{ ...styles.td, ...styles.stickyCol3 }}>{hole.course}</td>
+                        {activeMatch.players.map((player) => (
+                          <td key={`${holeIndex}-${player}`} style={styles.td}>
+                            <input
+                              style={styles.smallInput}
+                              inputMode="numeric"
+                              value={holeScores[player] ?? ""}
+                              onChange={(e) => updateScore(activeMatch.id, holeIndex, player, e.target.value)}
+                            />
+                          </td>
+                        ))}
+                        {activeMatch.teams.map((team, i) => (
+                          <td key={`${holeIndex}-${team.name}`} style={styles.td}>{teamScores[i] ?? "-"}</td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td style={{ ...styles.td, ...styles.stickyCol1, fontWeight: 700 }}>Totals</td>
+                    <td style={{ ...styles.td, ...styles.stickyCol2, fontWeight: 700 }}>
+                      {activeMatch.holes.reduce((sum, hole) => sum + hole.par, 0)}
+                    </td>
+                    <td style={{ ...styles.td, ...styles.stickyCol3, fontWeight: 700 }}>-</td>
+                    {activeSummary.playerTotals.map((item) => (
+                      <td key={item.player} style={{ ...styles.td, fontWeight: 700 }}>
+                        {item.entered ? item.total : "-"}
+                      </td>
+                    ))}
+                    {activeSummary.teamTotals.map((team) => (
+                      <td key={team.name} style={{ ...styles.td, fontWeight: 700 }}>
+                        {team.completedHoles ? team.total : "-"}
+                      </td>
+                    ))}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
