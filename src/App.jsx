@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 
-const STORAGE_KEY = "shangri-la-matches-app-v2";
+const STORAGE_KEY = "shangri-la-matches-app-v3";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -9,9 +9,15 @@ const SCORE_TABLE = "golf_match_sessions";
 const SCORE_CHANNEL = "golf-live-scores";
 
 const hasSupabaseConfig = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
-const supabase = hasSupabaseConfig
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : null;
+const supabase = hasSupabaseConfig ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+const SIDE_BET = {
+  name: "Mahan / Toal vs Jeff / Dexter",
+  teamAName: "Mahan / Toal",
+  teamBName: "Jeff / Dexter",
+  teamAPlayers: ["Mahan", "Toal"],
+  teamBPlayers: ["Jeff", "Dexter"],
+};
 
 const matches = [
   {
@@ -120,6 +126,15 @@ function scoreTeamForHole(match, team, holeScores) {
   return null;
 }
 
+function scoreNamedPlayersBestOne(players, holeScores) {
+  const values = players
+    .map((player) => toNumber(holeScores[player]))
+    .filter((value) => value !== null)
+    .sort((a, b) => a - b);
+
+  return values.length >= 1 ? values[0] : null;
+}
+
 function getParForTeam(match, hole) {
   return match.scoreType === "best2of4" ? hole.par * 2 : hole.par;
 }
@@ -142,17 +157,79 @@ function computeMatchSummary(match, scorebook) {
     return { ...team, total, completedHoles, parTotal, toPar: total - parTotal };
   });
 
+  const playerTotals = match.players.map((player) => {
+    let total = 0;
+    let entered = 0;
+
+    match.holes.forEach((_, index) => {
+      const value = toNumber(scorebook[index]?.[player]);
+      if (value !== null) {
+        total += value;
+        entered += 1;
+      }
+    });
+
+    return { player, total, entered };
+  });
+
   const completedByHole = match.holes.filter((_, index) => {
     const scores = scorebook[index] || {};
     return match.players.every((player) => toNumber(scores[player]) !== null);
   }).length;
 
-  return { teamTotals, completedByHole };
+  return { teamTotals, playerTotals, completedByHole };
 }
 
-function formatToPar(value) {
-  if (value === 0) return "E";
-  return value > 0 ? `+${value}` : `${value}`;
+function computeSideBet(scores) {
+  const holes = [];
+  let teamATotal = 0;
+  let teamBTotal = 0;
+  let teamAHolesWon = 0;
+  let teamBHolesWon = 0;
+  let ties = 0;
+
+  matches.forEach((match) => {
+    match.holes.forEach((hole, holeIndex) => {
+      const holeScores = scores[match.id]?.[holeIndex] || {};
+      const teamAScore = scoreNamedPlayersBestOne(SIDE_BET.teamAPlayers, holeScores);
+      const teamBScore = scoreNamedPlayersBestOne(SIDE_BET.teamBPlayers, holeScores);
+
+      let winner = "";
+      if (teamAScore !== null && teamBScore !== null) {
+        teamATotal += teamAScore;
+        teamBTotal += teamBScore;
+        if (teamAScore < teamBScore) {
+          winner = SIDE_BET.teamAName;
+          teamAHolesWon += 1;
+        } else if (teamBScore < teamAScore) {
+          winner = SIDE_BET.teamBName;
+          teamBHolesWon += 1;
+        } else {
+          winner = "Tie";
+          ties += 1;
+        }
+      }
+
+      holes.push({
+        key: `${match.id}-${holeIndex}`,
+        matchId: match.id,
+        matchTitle: match.title,
+        holeLabel: `${hole.course} ${hole.hole}`,
+        teamAScore,
+        teamBScore,
+        winner,
+      });
+    });
+  });
+
+  return {
+    holes,
+    teamATotal,
+    teamBTotal,
+    teamAHolesWon,
+    teamBHolesWon,
+    ties,
+  };
 }
 
 function deepMergeScores(base, incoming) {
@@ -175,28 +252,100 @@ function makeShareUrl(sessionId) {
   return url.toString();
 }
 
+function formatToPar(value) {
+  if (value === 0) return "E";
+  return value > 0 ? `+${value}` : `${value}`;
+}
+
 const styles = {
-  page: { fontFamily: "Arial, sans-serif", background: "#f5f7fb", minHeight: "100vh", padding: 16, color: "#111827" },
-  wrap: { maxWidth: 1400, margin: "0 auto" },
-  card: { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: 16, marginBottom: 16 },
-  row: { display: "flex", gap: 12, flexWrap: "wrap" },
-  button: { padding: "10px 14px", borderRadius: 10, border: "1px solid #d1d5db", background: "#111827", color: "#fff", cursor: "pointer" },
-  buttonAlt: { padding: "10px 14px", borderRadius: 10, border: "1px solid #d1d5db", background: "#fff", color: "#111827", cursor: "pointer" },
-  input: { padding: "10px 12px", borderRadius: 10, border: "1px solid #d1d5db", minWidth: 220 },
-  smallInput: { width: 54, padding: 6, textAlign: "center", borderRadius: 8, border: "1px solid #d1d5db" },
-  tableWrap: { overflowX: "auto", border: "1px solid #e5e7eb", borderRadius: 16, background: "#fff" },
-  table: { borderCollapse: "collapse", width: "100%", minWidth: 1100 },
-  th: { padding: 8, borderBottom: "1px solid #e5e7eb", background: "#f3f4f6", textAlign: "center", whiteSpace: "nowrap", fontSize: 13 },
-  td: { padding: 8, borderBottom: "1px solid #e5e7eb", textAlign: "center", fontSize: 13 },
-  badge: { display: "inline-block", padding: "4px 8px", borderRadius: 999, background: "#eef2ff", fontSize: 12 },
+  page: {
+    fontFamily: 'Arial, sans-serif',
+    background: 'linear-gradient(180deg, #f8fff7 0%, #fff4f7 100%)',
+    minHeight: '100vh',
+    padding: 16,
+    color: '#16351f',
+  },
+  wrap: { maxWidth: 1500, margin: '0 auto' },
+  card: {
+    background: '#ffffff',
+    border: '1px solid #d9ead7',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 16,
+    boxShadow: '0 8px 24px rgba(22, 53, 31, 0.06)',
+  },
+  row: { display: 'flex', gap: 12, flexWrap: 'wrap' },
+  button: {
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #2f6b3d',
+    background: '#2f6b3d',
+    color: '#fff',
+    cursor: 'pointer',
+    fontWeight: 700,
+  },
+  buttonAlt: {
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #e9b7c7',
+    background: '#fff5f8',
+    color: '#8d3453',
+    cursor: 'pointer',
+    fontWeight: 700,
+  },
+  input: {
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid #d8c4cb',
+    minWidth: 220,
+    background: '#fffdfd',
+  },
+  smallInput: {
+    width: 54,
+    padding: 6,
+    textAlign: 'center',
+    borderRadius: 8,
+    border: '1px solid #d8c4cb',
+    background: '#fffdfd',
+  },
+  tableWrap: {
+    overflowX: 'auto',
+    border: '1px solid #e6d8dd',
+    borderRadius: 16,
+    background: '#fff',
+  },
+  table: { borderCollapse: 'collapse', width: '100%', minWidth: 1150 },
+  th: {
+    padding: 8,
+    borderBottom: '1px solid #e6d8dd',
+    background: '#f7e7ed',
+    textAlign: 'center',
+    whiteSpace: 'nowrap',
+    fontSize: 13,
+    color: '#7b2d4b',
+  },
+  td: {
+    padding: 8,
+    borderBottom: '1px solid #eef2ea',
+    textAlign: 'center',
+    fontSize: 13,
+  },
   tab: (active) => ({
-    padding: "10px 14px",
+    padding: '10px 14px',
     borderRadius: 12,
-    border: "1px solid #d1d5db",
-    background: active ? "#111827" : "#fff",
-    color: active ? "#fff" : "#111827",
-    cursor: "pointer",
+    border: active ? '1px solid #2f6b3d' : '1px solid #e3c5cf',
+    background: active ? '#2f6b3d' : '#fff7fa',
+    color: active ? '#fff' : '#8d3453',
+    cursor: 'pointer',
+    fontWeight: 700,
   }),
+  scoreBox: {
+    border: '1px solid #e6d8dd',
+    borderRadius: 12,
+    padding: 12,
+    background: 'linear-gradient(180deg, #f8fff7 0%, #fff7fa 100%)',
+    minWidth: 220,
+  },
 };
 
 export default function App() {
@@ -234,7 +383,10 @@ export default function App() {
 
   useEffect(() => {
     if (!isHydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sessionId, scores, lastSavedAt: Date.now() }));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ sessionId, scores, lastSavedAt: Date.now() }),
+    );
   }, [scores, sessionId, isHydrated]);
 
   useEffect(() => {
@@ -263,8 +415,12 @@ export default function App() {
         setLastSavedAt(data.updated_at || null);
       } else {
         await supabase.from(SCORE_TABLE).upsert(
-          { session_id: sessionId, scores: createInitialScores(), updated_at: new Date().toISOString() },
-          { onConflict: "session_id" }
+          {
+            session_id: sessionId,
+            scores: createInitialScores(),
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "session_id" },
         );
       }
 
@@ -282,7 +438,7 @@ export default function App() {
               setLastSavedAt(payload.new.updated_at || null);
               setSyncStatus("Live sync connected");
             }
-          }
+          },
         )
         .subscribe();
     }
@@ -316,6 +472,8 @@ export default function App() {
       return acc;
     }, {});
   }, [scores]);
+
+  const sideBet = useMemo(() => computeSideBet(scores), [scores]);
 
   const updateScore = (matchId, holeIndex, player, value) => {
     const cleaned = value.replace(/[^0-9]/g, "");
@@ -375,15 +533,15 @@ export default function App() {
   const activeMatch = matches.find((m) => m.id === activeTab);
   const activeSummary = summaries[activeTab];
   const sortedTeams = [...activeSummary.teamTotals].sort(
-    (a, b) => a.total - b.total || b.completedHoles - a.completedHoles
+    (a, b) => a.total - b.total || b.completedHoles - a.completedHoles,
   );
 
   return (
     <div style={styles.page}>
       <div style={styles.wrap}>
-        <div style={{ ...styles.card }}>
-          <h1 style={{ marginTop: 0 }}>Shangri-La Match Tracker</h1>
-          <p>Enter scores hole-by-hole and share the same session link with the group.</p>
+        <div style={styles.card}>
+          <h1 style={{ marginTop: 0, color: '#1f5c32' }}>Shangri-La Match Tracker</h1>
+          <p style={{ color: '#7b2d4b' }}>Masters weekend edition — enter scores hole-by-hole and share the same session link with the group.</p>
           <div style={styles.row}>
             <input
               style={styles.input}
@@ -400,6 +558,51 @@ export default function App() {
           <div style={{ marginTop: 6, fontSize: 13 }}>
             <strong>Status:</strong> {syncStatus}
             {lastSavedAt ? ` • Last save: ${new Date(lastSavedAt).toLocaleString()}` : ""}
+          </div>
+        </div>
+
+        <div style={styles.card}>
+          <h2 style={{ marginTop: 0 }}>{SIDE_BET.name}</h2>
+          <div style={{ ...styles.row, marginBottom: 16 }}>
+            <div style={styles.scoreBox}>
+              <div style={{ fontWeight: 700 }}>{SIDE_BET.teamAName}</div>
+              <div>Total best-ball score: <strong>{sideBet.teamATotal}</strong></div>
+              <div>Holes won: <strong>{sideBet.teamAHolesWon}</strong></div>
+            </div>
+            <div style={styles.scoreBox}>
+              <div style={{ fontWeight: 700 }}>{SIDE_BET.teamBName}</div>
+              <div>Total best-ball score: <strong>{sideBet.teamBTotal}</strong></div>
+              <div>Holes won: <strong>{sideBet.teamBHolesWon}</strong></div>
+            </div>
+            <div style={styles.scoreBox}>
+              <div style={{ fontWeight: 700 }}>Tied holes</div>
+              <div style={{ fontSize: 22, marginTop: 6 }}><strong>{sideBet.ties}</strong></div>
+            </div>
+          </div>
+
+          <div style={styles.tableWrap}>
+            <table style={{ ...styles.table, minWidth: 800 }}>
+              <thead>
+                <tr>
+                  <th style={styles.th}>Match</th>
+                  <th style={styles.th}>Hole</th>
+                  <th style={styles.th}>{SIDE_BET.teamAName}</th>
+                  <th style={styles.th}>{SIDE_BET.teamBName}</th>
+                  <th style={styles.th}>Winner</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sideBet.holes.map((item) => (
+                  <tr key={item.key}>
+                    <td style={styles.td}>{item.matchTitle}</td>
+                    <td style={styles.td}>{item.holeLabel}</td>
+                    <td style={styles.td}>{item.teamAScore ?? "-"}</td>
+                    <td style={styles.td}>{item.teamBScore ?? "-"}</td>
+                    <td style={styles.td}>{item.winner || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -420,7 +623,7 @@ export default function App() {
           <div style={{ marginBottom: 12 }}>{activeMatch.subtitle}</div>
           <div style={{ ...styles.row, marginBottom: 16 }}>
             {sortedTeams.map((team) => (
-              <div key={team.name} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, background: "#fafafa" }}>
+              <div key={team.name} style={styles.scoreBox}>
                 <div style={{ fontWeight: 700 }}>{team.name}</div>
                 <div>{team.players.join(" • ")}</div>
                 <div style={{ marginTop: 6 }}>Total: <strong>{team.total}</strong></div>
@@ -455,7 +658,7 @@ export default function App() {
                 {activeMatch.holes.map((hole, holeIndex) => {
                   const holeScores = scores[activeMatch.id]?.[holeIndex] || {};
                   const teamScores = activeMatch.teams.map((team) =>
-                    scoreTeamForHole(activeMatch, team, holeScores)
+                    scoreTeamForHole(activeMatch, team, holeScores),
                   );
 
                   return (
@@ -484,6 +687,25 @@ export default function App() {
                   );
                 })}
               </tbody>
+              <tfoot>
+                <tr>
+                  <td style={{ ...styles.td, fontWeight: 700 }}>Totals</td>
+                  <td style={{ ...styles.td, fontWeight: 700 }}>
+                    {activeMatch.holes.reduce((sum, hole) => sum + hole.par, 0)}
+                  </td>
+                  <td style={{ ...styles.td, fontWeight: 700 }}>-</td>
+                  {activeSummary.playerTotals.map((item) => (
+                    <td key={item.player} style={{ ...styles.td, fontWeight: 700 }}>
+                      {item.entered ? item.total : "-"}
+                    </td>
+                  ))}
+                  {activeSummary.teamTotals.map((team) => (
+                    <td key={team.name} style={{ ...styles.td, fontWeight: 700 }}>
+                      {team.completedHoles ? team.total : "-"}
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
