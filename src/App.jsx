@@ -139,10 +139,10 @@ function computeMatchSummary(match, scorebook) {
 
     match.holes.forEach((hole, index) => {
       const holeScore = scoreTeamForHole(match, team, scorebook[index] || {});
-      parTotal += getParForTeam(match, hole);
       if (holeScore !== null) {
         total += holeScore;
         completedHoles += 1;
+        parTotal += getParForTeam(match, hole);
       }
     });
 
