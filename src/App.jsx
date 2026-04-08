@@ -341,6 +341,7 @@ export default function App() {
   const [sessionInput, setSessionInput] = useState("shangri-la-2026");
   const [syncStatus, setSyncStatus] = useState(hasSupabaseConfig ? "Connecting..." : "Local only");
   const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [confirmResetMatchId, setConfirmResetMatchId] = useState(null);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
@@ -495,6 +496,7 @@ export default function App() {
       void pushSharedScores(next);
       return next;
     });
+    setConfirmResetMatchId(null);
   };
 
   const applySession = () => {
@@ -628,9 +630,23 @@ export default function App() {
             </div>
 
             <div style={{ marginBottom: 12 }}>
-              <button style={styles.buttonAlt} onClick={() => resetMatch(activeMatch.id)}>
-                Reset this match
-              </button>
+              {confirmResetMatchId === activeMatch.id ? (
+                <div style={{ ...styles.row, alignItems: "center" }}>
+                  <div style={{ color: "#8d3453", fontWeight: 700 }}>
+                    Confirm reset? This clears all scores for this match.
+                  </div>
+                  <button style={styles.button} onClick={() => resetMatch(activeMatch.id)}>
+                    Yes, reset match
+                  </button>
+                  <button style={styles.buttonAlt} onClick={() => setConfirmResetMatchId(null)}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button style={styles.buttonAlt} onClick={() => setConfirmResetMatchId(activeMatch.id)}>
+                  Reset this match
+                </button>
+              )}
             </div>
 
             <div style={styles.tableWrap}>
