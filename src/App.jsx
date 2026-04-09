@@ -11,7 +11,8 @@ const SCORE_CHANNEL = "golf-live-scores";
 const hasSupabaseConfig = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 const supabase = hasSupabaseConfig ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
-const MATCH_STAKE_PER_PERSON = 50;
+const MATCH_STAKE_PER_PERSON = 40;
+const SKINS_STAKE_PER_PERSON_PER_MATCH = 10;
 const SIDE_BET_STAKE_PER_PERSON = 100;
 
 const SIDE_BET = {
@@ -231,23 +232,40 @@ function computeSideBet(scores) {
 function computeResults(scores) {
   const holeResults = [];
   const roundResults = [];
+  const skins = [];
+  const skinPot = matches.length * 8 * SKINS_STAKE_PER_PERSON_PER_MATCH;
 
   matches.forEach((match) => {
     match.holes.forEach((hole, holeIndex) => {
       const holeScores = scores[match.id]?.[holeIndex] || {};
-      match.players.forEach((player) => {
-        const score = toNumber(holeScores[player]);
-        if (score !== null) {
-          holeResults.push({
+      const enteredScores = match.players
+        .map((player) => ({ player, score: toNumber(holeScores[player]) }))
+        .filter((item) => item.score !== null);
+
+      enteredScores.forEach((item) => {
+        holeResults.push({
+          matchTitle: match.title,
+          course: hole.course,
+          hole: hole.hole,
+          player: item.player,
+          score: item.score,
+          toPar: item.score - hole.par,
+        });
+      });
+
+      if (enteredScores.length === match.players.length) {
+        const sorted = [...enteredScores].sort((a, b) => a.score - b.score);
+        if (sorted.length >= 2 && sorted[0].score < sorted[1].score) {
+          skins.push({
             matchTitle: match.title,
             course: hole.course,
             hole: hole.hole,
-            player,
-            score,
-            toPar: score - hole.par,
+            player: sorted[0].player,
+            score: sorted[0].score,
+            toPar: sorted[0].score - hole.par,
           });
         }
-      });
+      }
     });
 
     match.players.forEach((player) => {
@@ -275,6 +293,17 @@ function computeResults(scores) {
     });
   });
 
+  const skinCounts = skins.reduce((acc, skin) => {
+    acc[skin.player] = (acc[skin.player] || 0) + 1;
+    return acc;
+  }, {});
+
+  const totalSkins = skins.length;
+  const skinValue = totalSkins ? skinPot / totalSkins : 0;
+  const skinPayouts = Object.entries(skinCounts)
+    .map(([player, count]) => ({ player, count, amount: count * skinValue }))
+    .sort((a, b) => b.amount - a.amount || a.player.localeCompare(b.player));
+
   const highestHole = holeResults.length
     ? holeResults.reduce((worst, current) => (current.score > worst.score ? current : worst))
     : null;
@@ -291,10 +320,21 @@ function computeResults(scores) {
     ? roundResults.reduce((best, current) => (current.toPar < best.toPar ? current : best))
     : null;
 
-  return { highestHole, lowestHoleToPar, highestRoundToPar, lowestRoundToPar, roundResults };
+  return {
+    highestHole,
+    lowestHoleToPar,
+    highestRoundToPar,
+    lowestRoundToPar,
+    roundResults,
+    skins,
+    skinPot,
+    totalSkins,
+    skinValue,
+    skinPayouts,
+  };
 }
 
-function computePayouts(summaries, sideBet) {
+function computePayouts(summaries, sideBet, results) {
   const ledger = {};
   const allPlayers = Array.from(new Set(matches.flatMap((m) => m.players)));
   allPlayers.forEach((player) => {
@@ -380,12 +420,28 @@ function computePayouts(summaries, sideBet) {
     }
   }
 
+  const skinsSettlement = {
+    pot: results.skinPot,
+    totalSkins: results.totalSkins,
+    valuePerSkin: results.skinValue,
+    payouts: results.skinPayouts,
+  };
+
+  results.skinPayouts.forEach((item) => {
+    ledger[item.player] += item.amount;
+  });
+  const totalSkinPot = results.skinPot;
+  const contributors = allPlayers.filter((player) => !results.skinPayouts.some((p) => p.player === player));
+  allPlayers.forEach((player) => {
+    ledger[player] -= totalSkinPot / allPlayers.length;
+  });
+
   const netPayouts = Object.entries(ledger)
     .map(([player, amount]) => ({ player, amount }))
-    .filter((item) => item.amount !== 0)
+    .filter((item) => Math.abs(item.amount) > 0.005)
     .sort((a, b) => b.amount - a.amount);
 
-  return { matchSettlements, sideBetSettlement, netPayouts };
+  return { matchSettlements, sideBetSettlement, skinsSettlement, netPayouts };
 }
 
 function deepMergeScores(base, incoming) {
@@ -648,7 +704,7 @@ export default function App() {
 
   const sideBet = useMemo(() => computeSideBet(scores), [scores]);
   const results = useMemo(() => computeResults(scores), [scores]);
-  const payouts = useMemo(() => computePayouts(summaries, sideBet), [summaries, sideBet]);
+  const payouts = useMemo(() => computePayouts(summaries, sideBet, results), [summaries, sideBet, results]);
 
   const updateScore = (matchId, holeIndex, player, value) => {
     const cleaned = value.replace(/[^0-9]/g, "");
@@ -848,6 +904,69 @@ export default function App() {
                   </>
                 ) : <div>No completed rounds yet</div>}
               </div>
+              <div style={styles.scoreBox}>
+                <div style={{ fontWeight: 700 }}>Skins</div>
+                <div>Total skins: <strong>{results.totalSkins}</strong></div>
+                <div>Skin value: <strong>{results.totalSkins ? formatMoney(results.skinValue) : '$0'}</strong></div>
+                <div>Pot: <strong>{formatMoney(results.skinPot)}</strong></div>
+              </div>
+            </div>
+
+            <div style={{ ...styles.card, padding: 0, border: 'none', boxShadow: 'none', marginBottom: 16 }}>
+              <h3 style={{ marginTop: 0 }}>Skin Winners</h3>
+              <div style={styles.tableWrap}>
+                <table style={{ ...styles.table, minWidth: 850 }}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Match</th>
+                      <th style={styles.th}>Hole</th>
+                      <th style={styles.th}>Player</th>
+                      <th style={styles.th}>Score</th>
+                      <th style={styles.th}>To Par</th>
+                      <th style={styles.th}>Payout</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.skins.length ? results.skins.map((skin, index) => (
+                      <tr key={`${skin.matchTitle}-${skin.player}-${skin.hole}-${index}`}>
+                        <td style={styles.td}>{skin.matchTitle}</td>
+                        <td style={styles.td}>{skin.course} {skin.hole}</td>
+                        <td style={styles.td}>{skin.player}</td>
+                        <td style={styles.td}>{skin.score}</td>
+                        <td style={styles.td}>{formatToPar(skin.toPar)}</td>
+                        <td style={styles.td}>{formatMoney(results.skinValue)}</td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan="6" style={styles.td}>No skins yet</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={styles.tableWrap}>
+              <table style={{ ...styles.table, minWidth: 700 }}>
+                <thead>
+                  <tr>
+                    <th style={styles.th}>Match</th>
+                    <th style={styles.th}>Player</th>
+                    <th style={styles.th}>Total</th>
+                    <th style={styles.th}>Par</th>
+                    <th style={styles.th}>To Par</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.roundResults.map((round, index) => (
+                    <tr key={`${round.matchTitle}-${round.player}-${index}`}>
+                      <td style={styles.td}>{round.matchTitle}</td>
+                      <td style={styles.td}>{round.player}</td>
+                      <td style={styles.td}>{round.total}</td>
+                      <td style={styles.td}>{round.parTotal}</td>
+                      <td style={styles.td}>{formatToPar(round.toPar)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             <div style={styles.tableWrap}>
@@ -881,7 +1000,7 @@ export default function App() {
           <div style={styles.card}>
             <h2 style={{ marginTop: 0 }}>Money</h2>
             <div style={{ marginBottom: 12, color: "#7b2d4b" }}>
-              Match stake: ${MATCH_STAKE_PER_PERSON} per person per match • Side bet: ${SIDE_BET_STAKE_PER_PERSON} per person
+              Match stake: $40 per person per match • Skins: $10 per person per match into one overall pot • Side bet: $100 per person
             </div>
             <div style={{ ...styles.row, marginBottom: 16 }}>
               {payouts.netPayouts.length ? payouts.netPayouts.map((item) => (
@@ -922,6 +1041,13 @@ export default function App() {
                     <td style={styles.td}>{payouts.sideBetSettlement.winners ? payouts.sideBetSettlement.winners.join(", ") : "-"}</td>
                     <td style={styles.td}>{payouts.sideBetSettlement.losers ? payouts.sideBetSettlement.losers.join(", ") : "-"}</td>
                     <td style={styles.td}>{payouts.sideBetSettlement.amountPerPerson ? `$${payouts.sideBetSettlement.amountPerPerson}` : "-"}</td>
+                  </tr>
+                  <tr>
+                    <td style={styles.td}>Skins Pool</td>
+                    <td style={styles.td}>{payouts.skinsSettlement.totalSkins ? `${payouts.skinsSettlement.totalSkins} skins awarded` : "No skins yet"}</td>
+                    <td style={styles.td}>{payouts.skinsSettlement.payouts.length ? payouts.skinsSettlement.payouts.map((p) => `${p.player} (${p.count})`).join(", ") : "-"}</td>
+                    <td style={styles.td}>All players contributed</td>
+                    <td style={styles.td}>{payouts.skinsSettlement.totalSkins ? `${formatMoney(payouts.skinsSettlement.valuePerSkin)} per skin` : "-"}</td>
                   </tr>
                 </tbody>
               </table>
